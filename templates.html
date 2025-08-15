@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Assistant Chat</title>
+</head>
+<body>
+  <h2>Talk to Your Assistant</h2>
+
+  <!-- Chat box -->
+  <input type="text" id="message" placeholder="Type your message">
+  <button id="send-btn">Send</button>
+
+  <p><strong>Assistant:</strong> <span id="response"></span></p>
+
+  <!-- Video stream -->
+  <video id="video" autoplay playsinline width="320" height="240"></video>
+  <button id="startButton">Start Camera & Mic</button>
+
+  <div id="latestVision" style="display:none;"></div> <!-- hidden for vision context -->
+
+  <script>
+    const video = document.getElementById('video');
+    const startBtn = document.getElementById('startButton');
+    const sendBtn = document.getElementById('send-btn');
+    const messageInput = document.getElementById('message');
+    const responseSpan = document.getElementById('response');
+    const visionDiv = document.getElementById('latestVision');
+
+    let sendFramesInterval;
+
+    // Start camera + mic
+    startBtn.onclick = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        video.srcObject = stream;
+
+        if(sendFramesInterval) clearInterval(sendFramesInterval);
+        sendFramesInterval = setInterval(() => {
+          if(video.videoWidth === 0 || video.videoHeight === 0) return;
+
+          const canvas = document.createElement('canvas');
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0);
+
+          const imageData = canvas.toDataURL('image/jpeg');
+
+          // send to correct endpoint
+          fetch("/process_image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: imageData })
+          })
+          .then(res => res.json())
+          .then(data => {
+            if(data.response){
+              visionDiv.innerText = data.response; // save latest vision
+              console.log("Vision updated:", data.response);
+            }
+          })
+          .catch(err => console.error("Error sending frame:", err));
+        }, 1000); // 1 frame per second
+
+      } catch(err) {
+        console.error("Error accessing camera/mic:", err);
+      }
+    };
+
+    // Send typed message
+    async function sendMessage() {
+      const message = messageInput.value.trim();
+      if(!message) return;
+
+      messageInput.value = '';
+      try {
+        const res = await fetch("/chat", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ message, vision: visionDiv.innerText })
+        });
+        const data = await res.json();
+        if(data.response) responseSpan.innerText = data.response;
+      } catch(err) {
+        console.error("Chat error:", err);
+      }
+    }
+
+    sendBtn.onclick = sendMessage;
+    messageInput.addEventListener('keydown', e => { if(e.key === 'Enter'){ sendMessage(); } });
+  </script>
+</body>
+</html>
+
+
