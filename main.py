@@ -39,7 +39,7 @@ model = YOLO('yolov8n.pt')
 model = YOLO("runs/detect/train6/weights/best.pt")  # or wherever you saved your best.pt
 
 # OpenAI setup
-client = OpenAI(api_key="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")
+client = OpenAI(api_key="secret open ai key")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -423,6 +423,7 @@ def main():
 if __name__ == "__main__":
     threading.Thread(target=lambda: app.run(host="0.0.0.0", port=5000), daemon=True).start()
     main()
+
 
 
 
