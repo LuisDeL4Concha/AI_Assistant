@@ -46,3 +46,4 @@ Analyze it using AI models
 Take voice commands and respond
 
 Future work will expand its intelligence, accuracy, and AR integration to help you do complicated tasks.
+VIDEO DEMO: https://youtu.be/vp5oYhSXDNc
